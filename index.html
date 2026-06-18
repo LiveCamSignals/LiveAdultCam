@@ -2,29 +2,85 @@
 <html lang="en">
 <head>
   <meta name="google-site-verification" content="goB1Rs3yfE-UpWImRs_rmSW0iZt8h_WRxK0x7ugi3dU" />
-<meta charset="UTF-8">
-<title>Chaturbate Online Rooms | Live Adult Cams</title>
-<meta name="description" content="Live Chaturbate performers with embedded adult webcam shows.">
-<meta name="keywords" content="chaturbate, chaturbate live, chaturbate rooms, live cams, adult webcam, free chaturbate, live sex cams, webcam girls, chaturbate affiliates, online performers">
-<meta name="robots" content="index,follow">
-<style>
-body{margin:0;padding:20px;font-family:Arial,sans-serif;background:#111;color:#ddd;}
-h1{text-align:center;margin-bottom:30px;}
-#rooms{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:20px;}
-.room{border:1px solid #333;padding:15px;background:#1a1a1a;}
-.room h2{margin:0 0 10px;font-size:1.4em;}
-.room h2 a{color:#ddd;text-decoration:none;}
-.room h2 a:hover{text-decoration:underline;}
-.room p{margin:5px 0;font-size:0.95em;}
-iframe{border:none;width:100%;height:528px;max-width:850px;}
-</style>
+  <meta charset="UTF-8">
+  <title>Chaturbate Online Rooms | Live Adult Cams</title>
+  <meta name="description" content="Live Chaturbate performers with embedded adult webcam shows.">
+  <meta name="keywords" content="chaturbate, chaturbate live, chaturbate rooms, live cams, adult webcam, free chaturbate, live sex cams, webcam girls, chaturbate affiliates, online performers">
+  <meta name="robots" content="index,follow">
+  <style>
+    body{margin:0;padding:20px;font-family:Arial,sans-serif;background:#111;color:#ddd;}
+    h1{text-align:center;margin-bottom:30px;}
+    #rooms{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:20px;}
+    .room{border:1px solid #333;padding:15px;background:#1a1a1a;}
+    .room h2{margin:0 0 10px;font-size:1.4em;}
+    .room h2 a{color:#ddd;text-decoration:none;}
+    .room h2 a:hover{text-decoration:underline;}
+    .room p{margin:5px 0;font-size:0.95em;}
+    iframe{border:none;width:100%;height:528px;max-width:850px;}
+    .loading {text-align: center; padding: 20px; font-style: italic;}
+    .error {color: #ff6666; text-align: center; padding: 20px;}
+    button {padding: 8px 16px; background: #333; color: #ddd; border: none; cursor: pointer;}
+  </style>
 </head>
 <body>
-<h1>Chaturbate Online Rooms - Live Adult Cams</h1>
-<div id="rooms"></div>
-<script>
-async function loadRooms(){try{const ipRes=await fetch("https://api.ipify.org?format=json");const ipData=await ipRes.json();const ip=ipData.ip;const apiUrl=`https://chaturbate.com/api/public/affiliates/onlinerooms/?wm=T2CSW&client_ip=${encodeURIComponent(ip)}`;const res=await fetch(apiUrl);const data=await res.json();const container=document.getElementById("rooms");container.innerHTML=data.results.slice(0,20).map(r=>`<div class="room"><h2><a href="https://chaturbate.com/in/?tour=Limj&campaign=T2CSW&track=default&b=${encodeURIComponent(r.username)}" target="_blank">${r.username}</a></h2><p>${r.room_subject}</p><p>Viewers: ${r.num_users} | Show: ${r.current_show} | HD: ${r.is_hd?"Yes":"No"}</p>${r.iframe_embed_revshare}</div>`).join("");}catch(e){document.getElementById("rooms").innerHTML="<p>Load failed.</p>";}}
-loadRooms();
-</script>
+  <h1>Chaturbate Online Rooms - Live Adult Cams</h1>
+  <div style="text-align:center;margin-bottom:20px;">
+    <button onclick="loadRooms()">Refresh Rooms</button>
+  </div>
+  <div id="status" class="loading">Loading live rooms...</div>
+  <div id="rooms"></div>
+
+  <script>
+    async function getIP() {
+      try {
+        const ipRes = await fetch("https://api.ipify.org?format=json", {cache: "no-store"});
+        const ipData = await ipRes.json();
+        return ipData.ip;
+      } catch (e) {
+        console.warn("IP fetch failed, using fallback");
+        return "8.8.8.8";
+      }
+    }
+
+    async function loadRooms() {
+      const status = document.getElementById("status");
+      const container = document.getElementById("rooms");
+      status.textContent = "Loading live rooms...";
+      status.className = "loading";
+      container.innerHTML = "";
+
+      try {
+        const ip = await getIP();
+        const apiUrl = `https://chaturbate.com/api/public/affiliates/onlinerooms/?wm=T2CSW&client_ip=${encodeURIComponent(ip)}`;
+        
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        
+        if (!data.results || data.results.length === 0) {
+          throw new Error("No rooms available");
+        }
+
+        container.innerHTML = data.results.slice(0, 12).map(r => `
+          <div class="room">
+            <h2><a href="https://chaturbate.com/in/?tour=Limj&campaign=T2CSW&track=default&b=${encodeURIComponent(r.username)}" target="_blank" rel="noopener">${r.username}</a></h2>
+            <p>${(r.room_subject || 'No subject').substring(0, 120)}${(r.room_subject || '').length > 120 ? '...' : ''}</p>
+            <p>Viewers: ${r.num_users} | Show: ${r.current_show} | HD: ${r.is_hd ? "Yes" : "No"}</p>
+            ${r.iframe_embed_revshare || '<p style="color:#ffaa66;">Embed unavailable</p>'}
+          </div>
+        `).join("");
+
+        status.style.display = "none";
+      } catch (e) {
+        console.error(e);
+        status.innerHTML = `<span class="error">Failed to load rooms: ${e.message}.<br>Try refreshing or hosting on a server that supports CORS better.</span>`;
+      }
+    }
+
+    // Initial load + auto-refresh every 5 min
+    loadRooms();
+    setInterval(loadRooms, 300000);
+  </script>
 </body>
 </html>
