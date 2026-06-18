@@ -1,86 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="google-site-verification" content="goB1Rs3yfE-UpWImRs_rmSW0iZt8h_WRxK0x7ugi3dU" />
   <meta charset="UTF-8">
   <title>Chaturbate Online Rooms | Live Adult Cams</title>
-  <meta name="description" content="Live Chaturbate performers with embedded adult webcam shows.">
-  <meta name="keywords" content="chaturbate, chaturbate live, chaturbate rooms, live cams, adult webcam, free chaturbate, live sex cams, webcam girls, chaturbate affiliates, online performers">
-  <meta name="robots" content="index,follow">
+  <meta name="description" content="Live Chaturbate performers with embedded webcam shows.">
   <style>
     body{margin:0;padding:20px;font-family:Arial,sans-serif;background:#111;color:#ddd;}
     h1{text-align:center;margin-bottom:30px;}
+    #controls{text-align:center;margin:20px 0;}
     #rooms{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:20px;}
-    .room{border:1px solid #333;padding:15px;background:#1a1a1a;}
+    .room{border:1px solid #333;padding:15px;background:#1a1a1a;border-radius:8px;}
     .room h2{margin:0 0 10px;font-size:1.4em;}
-    .room h2 a{color:#ddd;text-decoration:none;}
+    .room h2 a{color:#ff69b4;text-decoration:none;}
     .room h2 a:hover{text-decoration:underline;}
-    .room p{margin:5px 0;font-size:0.95em;}
-    iframe{border:none;width:100%;height:528px;max-width:850px;}
-    .loading {text-align: center; padding: 20px; font-style: italic;}
-    .error {color: #ff6666; text-align: center; padding: 20px;}
-    button {padding: 8px 16px; background: #333; color: #ddd; border: none; cursor: pointer;}
+    iframe{border:none;width:100%;height:520px;max-width:850px;border-radius:6px;}
+    .loading, .error {text-align:center;padding:30px;font-size:1.1em;}
+    button{padding:10px 20px;background:#ff1493;color:white;border:none;border-radius:6px;cursor:pointer;font-size:1em;}
+    button:hover{background:#ff69b4;}
   </style>
 </head>
 <body>
-  <h1>Chaturbate Online Rooms - Live Adult Cams</h1>
-  <div style="text-align:center;margin-bottom:20px;">
-    <button onclick="loadRooms()">Refresh Rooms</button>
+  <h1>🔴 Chaturbate Live Rooms</h1>
+  <div id="controls">
+    <button onclick="loadRooms()">🔄 Refresh Rooms</button>
   </div>
-  <div id="status" class="loading">Loading live rooms...</div>
+  <div id="status" class="loading">Loading live rooms from Chaturbate...</div>
   <div id="rooms"></div>
 
   <script>
     async function getIP() {
       try {
-        const ipRes = await fetch("https://api.ipify.org?format=json", {cache: "no-store"});
-        const ipData = await ipRes.json();
-        return ipData.ip;
+        const res = await fetch("https://api.ipify.org?format=json", {cache: "no-store"});
+        const data = await res.json();
+        return data.ip;
       } catch (e) {
-        console.warn("IP fetch failed, using fallback");
-        return "8.8.8.8";
+        return "8.8.8.8"; // fallback
       }
     }
 
     async function loadRooms() {
       const status = document.getElementById("status");
       const container = document.getElementById("rooms");
-      status.textContent = "Loading live rooms...";
+      status.textContent = "Fetching live rooms...";
       status.className = "loading";
       container.innerHTML = "";
 
       try {
         const ip = await getIP();
-        const apiUrl = `https://chaturbate.com/api/public/affiliates/onlinerooms/?wm=T2CSW&client_ip=${encodeURIComponent(ip)}`;
-        
-        const res = await fetch(apiUrl);
+        const url = `https://chaturbate.com/api/public/affiliates/onlinerooms/?wm=T2CSW&client_ip=${encodeURIComponent(ip)}`;
+
+        const res = await fetch(url, { 
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
-        
-        if (!data.results || data.results.length === 0) {
-          throw new Error("No rooms available");
+
+        if (data.errors) {
+          throw new Error(data.errors.client_ip ? "IP parameter issue" : JSON.stringify(data.errors));
         }
 
-        container.innerHTML = data.results.slice(0, 12).map(r => `
-          <div class="room">
-            <h2><a href="https://chaturbate.com/in/?tour=Limj&campaign=T2CSW&track=default&b=${encodeURIComponent(r.username)}" target="_blank" rel="noopener">${r.username}</a></h2>
-            <p>${(r.room_subject || 'No subject').substring(0, 120)}${(r.room_subject || '').length > 120 ? '...' : ''}</p>
-            <p>Viewers: ${r.num_users} | Show: ${r.current_show} | HD: ${r.is_hd ? "Yes" : "No"}</p>
-            ${r.iframe_embed_revshare || '<p style="color:#ffaa66;">Embed unavailable</p>'}
-          </div>
-        `).join("");
+        if (!data.results || data.results.length === 0) {
+          throw new Error("No rooms found");
+        }
 
+        const html = data.results.slice(0, 12).map(room => `
+          <div class="room">
+            <h2><a href="https://chaturbate.com/in/?tour=Limj&campaign=T2CSW&b=${encodeURIComponent(room.username)}" target="_blank" rel="noopener">${room.username}</a></h2>
+            <p>${(room.room_subject || 'No description').substring(0, 140)}${(room.room_subject || '').length > 140 ? '...' : ''}</p>
+            <p>👥 ${room.num_users} viewers | 🎥 ${room.current_show} | ${room.is_hd ? '📺 HD' : ''}</p>
+            ${room.iframe_embed_revshare ? room.iframe_embed_revshare : '<p style="color:#ffaa66;">Embed temporarily unavailable</p>'}
+          </div>
+        `).join('');
+
+        container.innerHTML = html;
         status.style.display = "none";
-      } catch (e) {
-        console.error(e);
-        status.innerHTML = `<span class="error">Failed to load rooms: ${e.message}.<br>Try refreshing or hosting on a server that supports CORS better.</span>`;
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `
+          <span class="error">
+            ❌ Could not load rooms.<br><br>
+            <strong>Common fixes:</strong><br>
+            • Try a different browser / disable ad-blocker<br>
+            • Host on a server with a simple proxy (recommended for production)<br><br>
+            <small>Error: ${err.message}</small>
+          </span>`;
       }
     }
 
-    // Initial load + auto-refresh every 5 min
-    loadRooms();
-    setInterval(loadRooms, 300000);
+    // Auto load
+    window.onload = loadRooms;
+    // Auto refresh every 4 minutes
+    setInterval(loadRooms, 240000);
   </script>
 </body>
 </html>
